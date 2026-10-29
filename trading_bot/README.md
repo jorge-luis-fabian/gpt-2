@@ -52,6 +52,16 @@ python -m trading_bot.paper_trade --synthetic --iterations 3   # prueba rápida
 
 El saldo ficticio y las operaciones se guardan en `paper_state.json`. Borra ese archivo para empezar de cero.
 
+## 3. Ver el gráfico
+
+```bash
+python -m trading_bot.report --symbol BTC/USDT --days 180 --out reporte.html
+python -m trading_bot.report --synthetic --out reporte.html    # sin internet
+```
+
+Abre `reporte.html` con tu navegador. Verás el precio, las dos medias, dónde compró (▲) y vendió (▼)
+el bot, cómo evolucionó el capital frente a "comprar y mantener" y la lista de operaciones.
+
 ## Errores típicos por los que fallan los bots
 
 1. **Mirar el futuro**: decidir con el cierre de una vela y comprar a ese mismo precio. Aquí la
@@ -70,4 +80,5 @@ El saldo ficticio y las operaciones se guardan en `paper_state.json`. Borra ese 
 | `data.py` | Descarga precios del exchange, lee CSV o genera precios sintéticos |
 | `strategy.py` | Calcula las medias y la señal de compra/venta |
 | `backtest.py` | Simula la estrategia sobre el pasado y muestra métricas |
+| `report.py` | Genera la página con gráficos del backtest |
 | `paper_trade.py` | Simula la estrategia en vivo con dinero ficticio |

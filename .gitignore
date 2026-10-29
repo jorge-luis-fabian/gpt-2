@@ -3,3 +3,4 @@ __pycache__
 models/
 paper_state.json
 *.csv
+reporte*.html
