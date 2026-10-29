@@ -6,6 +6,7 @@ puedes parar y volver a arrancar sin perder el estado.
 
 Ejemplos:
     python -m trading_bot.paper_trade                      # corre indefinidamente
+    python -m trading_bot.paper_trade --strategy donchian --timeframe 1d
     python -m trading_bot.paper_trade --synthetic --iterations 3
 """
 
@@ -16,7 +17,8 @@ import time
 from datetime import datetime, timezone
 
 from . import config, data
-from .strategy import generate_signals
+from .backtest import add_common_args, params_from_args
+from .strategy import describe, run_signals, warmup
 
 
 def load_state(path, capital):
@@ -31,9 +33,9 @@ def save_state(path, state):
         json.dump(state, f, indent=2)
 
 
-def step(state, df, fast, slow, fee):
+def step(state, df, strategy, params, fee):
     """Aplica la señal de la última vela cerrada al estado. Devuelve un mensaje."""
-    last = generate_signals(df, fast, slow).iloc[-1]
+    last = run_signals(df, strategy, params).iloc[-1]
     price = last["close"]
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
 
@@ -53,35 +55,37 @@ def step(state, df, fast, slow, fee):
         action = "sin cambios"
 
     equity = state["cash"] + state["coins"] * price
-    return (f"[{now}] precio {price:,.2f} | media rápida {last['sma_fast']:,.2f} | "
-            f"media lenta {last['sma_slow']:,.2f} | {action} | capital {equity:,.2f} USDT")
+    info = describe(strategy, params)
+    lines = f"{info['line1']} {last['line1']:,.2f}"
+    if info["line2"]:
+        lines += f" | {info['line2']} {last['line2']:,.2f}"
+    if "rsi" in last:
+        lines += f" | RSI {last['rsi']:.1f}"
+    return f"[{now}] precio {price:,.2f} | {lines} | {action} | capital {equity:,.2f} USDT"
 
 
 def main():
-    p = argparse.ArgumentParser(description="Paper trading de cruce de medias móviles")
-    p.add_argument("--symbol", default=config.SYMBOL)
-    p.add_argument("--timeframe", default=config.TIMEFRAME)
-    p.add_argument("--exchange", default=config.EXCHANGE)
-    p.add_argument("--fast", type=int, default=config.FAST_PERIOD)
-    p.add_argument("--slow", type=int, default=config.SLOW_PERIOD)
-    p.add_argument("--capital", type=float, default=config.INITIAL_CAPITAL)
-    p.add_argument("--fee", type=float, default=config.FEE_RATE)
-    p.add_argument("--state", default=config.PAPER_STATE_FILE)
+    p = argparse.ArgumentParser(description="Paper trading con dinero ficticio")
+    add_common_args(p)
+    p.add_argument("--state", help="archivo de estado (por defecto paper_<estrategia>_<velas>.json)")
     p.add_argument("--iterations", type=int, default=0, help="0 = sin límite")
-    p.add_argument("--synthetic", action="store_true",
-                   help="precios inventados y sin esperar entre velas (para probar)")
     args = p.parse_args()
 
-    state = load_state(args.state, args.capital)
-    days = max(2, args.slow * data.timeframe_to_ms(args.timeframe) * 3 // 86_400_000 + 1)
+    params = params_from_args(args)
+    print(f"Paper trading: {describe(args.strategy, params)['name']}, velas de {args.timeframe}", flush=True)
+    state_file = args.state or config.PAPER_STATE_FILE.format(strategy=args.strategy, timeframe=args.timeframe)
+    state = load_state(state_file, args.capital)
+    candles = warmup(params) * 3
+    step_ms = data.timeframe_to_ms(args.timeframe)
+    days = max(2, candles * step_ms // 86_400_000 + 1)
     i = 0
     while args.iterations == 0 or i < args.iterations:
-        if args.synthetic:
-            df = data.synthetic_ohlcv(n=args.slow * 3 + i)
+        if args.synthetic:  # precios inventados y sin esperar entre velas (para probar)
+            df = data.synthetic_ohlcv(n=candles + i, step_ms=step_ms)
         else:
             df = data.fetch_ohlcv(args.symbol, args.timeframe, days, args.exchange)
-        print(step(state, df, args.fast, args.slow, args.fee), flush=True)
-        save_state(args.state, state)
+        print(step(state, df, args.strategy, params, args.fee), flush=True)
+        save_state(state_file, state)
         i += 1
         if not args.synthetic and (args.iterations == 0 or i < args.iterations):
             # esperar al cierre de la siguiente vela (+5 s de margen)

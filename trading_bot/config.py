@@ -10,4 +10,4 @@ SLOW_PERIOD = 50           # media móvil lenta (número de velas)
 INITIAL_CAPITAL = 1000.0   # saldo inicial ficticio en USDT
 FEE_RATE = 0.001           # comisión por operación (0.1 %)
 
-PAPER_STATE_FILE = "paper_state.json"  # dónde guarda el paper trading su saldo y operaciones
+PAPER_STATE_FILE = "paper_{strategy}_{timeframe}.json"  # dónde guarda el paper trading su saldo y operaciones

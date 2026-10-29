@@ -50,7 +50,8 @@ python -m trading_bot.paper_trade                              # revisa en cada 
 python -m trading_bot.paper_trade --synthetic --iterations 3   # prueba rápida
 ```
 
-El saldo ficticio y las operaciones se guardan en `paper_state.json`. Borra ese archivo para empezar de cero.
+El saldo ficticio y las operaciones se guardan en `paper_<estrategia>_<velas>.json` (por ejemplo
+`paper_sma_1h.json`). Borra ese archivo para empezar de cero.
 
 ## 3. Ver el gráfico
 
@@ -61,6 +62,28 @@ python -m trading_bot.report --synthetic --out reporte.html    # sin internet
 
 Abre `reporte.html` con tu navegador. Verás el precio, las dos medias, dónde compró (▲) y vendió (▼)
 el bot, cómo evolucionó el capital frente a "comprar y mantener" y la lista de operaciones.
+
+## 4. Otras estrategias
+
+Además del cruce de medias (`sma`) hay dos estrategias más. Se eligen con `--strategy` en
+`backtest`, `report` y `paper_trade`:
+
+| `--strategy` | Idea | Reglas (parámetros clásicos, fijos) |
+|---|---|---|
+| `sma` | Seguir la tendencia | Comprado mientras la media de 20 velas está sobre la de 50 |
+| `donchian` | Seguir la tendencia, reaccionando antes | Compra al superar el máximo de las 20 velas anteriores; vende al perder el mínimo de las 10 anteriores |
+| `rsi` | Comprar caídas dentro de una subida | Solo con el precio sobre su media de 200: compra con RSI(14) < 30; vende con RSI > 55 o al perder la media |
+
+Para compararlas todas a la vez, en velas de 4h (1 y 2 años) y diarias (1, 2 y 4 años):
+
+```bash
+python -m trading_bot.compare --symbol BTC/USDT
+```
+
+Imprime una tabla, la guarda en `comparacion.txt` y da un veredicto. Una estrategia **pasa** solo si
+en **todos** los periodos queda a menos de 10 puntos de comprar y mantener, o reduce la peor caída en
+al menos un tercio sin perder más de la mitad del retorno. El criterio está fijado de antemano: si
+ninguna pasa, no se ajustan los números hasta que alguna pase.
 
 ## Errores típicos por los que fallan los bots
 
@@ -78,7 +101,8 @@ el bot, cómo evolucionó el capital frente a "comprar y mantener" y la lista de
 |---|---|
 | `config.py` | Valores por defecto (par, medias, capital, comisión) |
 | `data.py` | Descarga precios del exchange, lee CSV o genera precios sintéticos |
-| `strategy.py` | Calcula las medias y la señal de compra/venta |
-| `backtest.py` | Simula la estrategia sobre el pasado y muestra métricas |
+| `strategy.py` | Las estrategias: calculan la señal de compra/venta |
+| `backtest.py` | Simula una estrategia sobre el pasado y muestra métricas |
+| `compare.py` | Compara todas las estrategias en varios periodos |
 | `report.py` | Genera la página con gráficos del backtest |
 | `paper_trade.py` | Simula la estrategia en vivo con dinero ficticio |

@@ -1,6 +1,7 @@
 __pycache__
 .mypy_cache/
 models/
-paper_state.json
+paper_*.json
 *.csv
 reporte*.html
+comparacion.txt

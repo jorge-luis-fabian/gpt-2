@@ -49,15 +49,16 @@ def load_csv(path):
     return df[COLUMNS[1:]].astype(float)
 
 
-def synthetic_ohlcv(n=2000, seed=42, drift=0.0002, volatility=0.01, start_price=30_000.0):
+def synthetic_ohlcv(n=2000, seed=42, drift=0.0002, volatility=0.01, start_price=30_000.0,
+                    step_ms=3_600_000):
     """Genera precios aleatorios (paseo aleatorio) para probar sin internet."""
     rng = np.random.default_rng(seed)
     returns = rng.normal(drift, volatility, n)
     close = start_price * np.exp(np.cumsum(returns))
     open_ = np.concatenate([[start_price], close[:-1]])
     spread = np.abs(rng.normal(0, volatility / 2, n)) * close
-    end = int(time.time() // 3600 * 3600 * 1000)
-    timestamps = end - np.arange(n)[::-1] * 3_600_000
+    end = int(time.time() * 1000) // step_ms * step_ms
+    timestamps = end - np.arange(n)[::-1] * step_ms
     rows = np.column_stack([
         timestamps, open_, np.maximum(open_, close) + spread,
         np.minimum(open_, close) - spread, close, rng.uniform(10, 100, n),
