@@ -174,6 +174,7 @@ def run_bot(args):
                 notify.send(f"🎉 Prueba superada: {args.test_buys} compras sin errores ({mode}).\n"
                             f"Invertido {state['invertido']:,.2f} USDT · BTC {state['btc']:.6f}\n📁 {folder}")
                 print(f"Prueba superada: {args.test_buys} compras sin errores.", flush=True)
+                notify.send_code("📦 Código completo del bot DCA (prueba superada)")
         except Exception as e:
             error = f"{type(e).__name__}: {e}"
             print(f"ERROR: {error}", flush=True)

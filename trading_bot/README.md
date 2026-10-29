@@ -146,6 +146,9 @@ El bot DCA puede avisarte por Telegram de cada compra, de cualquier error y de c
    `python -m trading_bot.notify --chat-id` y añade la línea `TELEGRAM_CHAT_ID=...` que muestra.
 4. Comprueba con `python -m trading_bot.notify --test`.
 
+Al superar la prueba, el bot te envía también su código en un `.zip` (sin el archivo `.env`, que
+tiene tus claves). Puedes pedirlo cuando quieras con `python -m trading_bot.notify --send-code`.
+
 ## Errores típicos por los que fallan los bots
 
 1. **Mirar el futuro**: decidir con el cierre de una vela y comprar a ese mismo precio. Aquí la
