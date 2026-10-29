@@ -115,6 +115,26 @@ Solo se operan monedas con al menos 200 días de historia y 5 millones de USDT d
 igual o mejor que comprar y mantener BTC, una peor caída al menos un tercio menor y un retorno anual
 positivo. Si no lo cumple, no se usa con dinero real.
 
+## 6. Bot de compras periódicas (DCA)
+
+Ninguna estrategia de entrar y salir le ganó a mantener BTC en las pruebas con datos reales. Por eso
+este bot no intenta adivinar el momento: compra una cantidad fija de BTC cada semana.
+
+```bash
+python -m trading_bot.dca                          # simulación con precios reales desde 2018
+python -m trading_bot.dca --amount 25 --every 14   # 25 USDT cada 2 semanas
+python -m trading_bot.dca --bot --loop             # bot con dinero ficticio, revisa cada día
+python -m trading_bot.dca --bot --loop --testnet   # órdenes en la Testnet de Binance (dinero de prueba)
+```
+
+Para la Testnet, crea las claves en https://testnet.binance.vision (no son las de tu cuenta real) y
+guárdalas en un archivo `.env` en la carpeta del bot:
+
+```
+BINANCE_TESTNET_KEY=...
+BINANCE_TESTNET_SECRET=...
+```
+
 ## Errores típicos por los que fallan los bots
 
 1. **Mirar el futuro**: decidir con el cierre de una vela y comprar a ese mismo precio. Aquí la
@@ -139,5 +159,6 @@ positivo. Si no lo cumple, no se usa con dinero real.
 | `research.py` | Investigación completa: elige monedas y estrategia |
 | `research_report.py` | Página con los gráficos de la investigación |
 | `bot.py` | Bot de cartera en paper trading |
+| `dca.py` | Simulación y bot de compras periódicas de BTC |
 | `report.py` | Genera la página con gráficos del backtest |
 | `paper_trade.py` | Simula la estrategia en vivo con dinero ficticio |

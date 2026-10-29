@@ -10,3 +10,7 @@ bot_config.json
 investigacion.txt
 investigacion.html
 paper_cartera.json
+.env
+paper_dca.json
+testnet_dca.json
+dca.txt
