@@ -135,6 +135,17 @@ BINANCE_TESTNET_KEY=...
 BINANCE_TESTNET_SECRET=...
 ```
 
+### Avisos por Telegram
+
+El bot DCA puede avisarte por Telegram de cada compra, de cualquier error y de cuando supera la prueba
+(3 compras sin errores; se cambia con `--test-buys`). Cada mensaje incluye la carpeta del bot.
+
+1. En Telegram, habla con @BotFather, envía `/newbot` y copia el token que te da.
+2. Escríbele cualquier mensaje a tu bot nuevo.
+3. En el archivo `.env` de la carpeta del bot pon `TELEGRAM_TOKEN=...`, ejecuta
+   `python -m trading_bot.notify --chat-id` y añade la línea `TELEGRAM_CHAT_ID=...` que muestra.
+4. Comprueba con `python -m trading_bot.notify --test`.
+
 ## Errores típicos por los que fallan los bots
 
 1. **Mirar el futuro**: decidir con el cierre de una vela y comprar a ese mismo precio. Aquí la
@@ -160,5 +171,6 @@ BINANCE_TESTNET_SECRET=...
 | `research_report.py` | Página con los gráficos de la investigación |
 | `bot.py` | Bot de cartera en paper trading |
 | `dca.py` | Simulación y bot de compras periódicas de BTC |
+| `notify.py` | Avisos por Telegram |
 | `report.py` | Genera la página con gráficos del backtest |
 | `paper_trade.py` | Simula la estrategia en vivo con dinero ficticio |

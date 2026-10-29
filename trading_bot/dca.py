@@ -14,6 +14,8 @@ Para la Testnet crea un archivo .env junto a esta carpeta con:
     BINANCE_TESTNET_KEY=...
     BINANCE_TESTNET_SECRET=...
 (las claves se crean en https://testnet.binance.vision; no son las de tu cuenta real).
+
+Avisos por Telegram (compras, errores y prueba superada): ver notify.py.
 """
 
 import argparse
@@ -24,7 +26,7 @@ from datetime import datetime, timezone
 
 import pandas as pd
 
-from . import universe
+from . import notify, universe
 
 FEE = 0.001
 STATE = "paper_dca.json"
@@ -101,19 +103,10 @@ def run_simulation(close, amount, every, start):
 
 # ---------------------------------------------------------------- bot
 
-def load_env(path=".env"):
-    if os.path.exists(path):
-        with open(path, encoding="utf-8") as f:
-            for line in f:
-                key, sep, value = line.strip().partition("=")
-                if sep and not key.startswith("#"):
-                    os.environ.setdefault(key.strip(), value.strip())
-
-
 def testnet_exchange():
     import ccxt
 
-    load_env()
+    notify.load_env()
     key, secret = os.environ.get("BINANCE_TESTNET_KEY"), os.environ.get("BINANCE_TESTNET_SECRET")
     if not key or not secret:
         raise SystemExit("Faltan BINANCE_TESTNET_KEY y BINANCE_TESTNET_SECRET en el archivo .env")
@@ -148,26 +141,45 @@ def bot_step(state, price, amount, every, today, exchange=None):
 
 
 def run_bot(args):
-    exchange = testnet_exchange() if args.testnet else None
+    folder = os.getcwd()
+    mode = "TESTNET de Binance (dinero de prueba)" if args.testnet else "Dinero ficticio"
     state_file = "testnet_dca.json" if args.testnet else args.state
     state = {"btc": 0.0, "invertido": 0.0, "last_buy": None, "compras": []}
     if os.path.exists(state_file):
         with open(state_file, encoding="utf-8") as f:
             state = json.load(f)
-    print(("TESTNET de Binance (dinero de prueba)" if args.testnet else "Dinero ficticio")
-          + f" · {args.amount:,.0f} USDT de BTC cada {args.every} días", flush=True)
+    print(f"{mode} · {args.amount:,.0f} USDT de BTC cada {args.every} días", flush=True)
     while True:
-        if args.synthetic:
-            close = universe.synthetic_universe()["BTC/USDT"]["close"]
-            price, today = float(close.iloc[-1]), close.index[-1].strftime("%Y-%m-%d")
-        else:
-            from . import data
-            ticker = (exchange or data.make_exchange()).fetch_ticker("BTC/USDT")
-            price = float(ticker["last"])
-            today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        print(bot_step(state, price, args.amount, args.every, today, exchange), flush=True)
-        with open(state_file, "w", encoding="utf-8") as f:
-            json.dump(state, f, indent=2)
+        try:
+            exchange = testnet_exchange() if args.testnet else None
+            if args.synthetic:
+                close = universe.synthetic_universe()["BTC/USDT"]["close"]
+                price, today = float(close.iloc[-1]), close.index[-1].strftime("%Y-%m-%d")
+            else:
+                from . import data
+                ticker = (exchange or data.make_exchange()).fetch_ticker("BTC/USDT")
+                price = float(ticker["last"])
+                today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            buys = len(state["compras"])
+            message = bot_step(state, price, args.amount, args.every, today, exchange)
+            print(message, flush=True)
+            with open(state_file, "w", encoding="utf-8") as f:
+                json.dump(state, f, indent=2)
+            if len(state["compras"]) > buys:
+                notify.send(f"🟢 Bot DCA · {mode}\n{message}\n📁 {folder}")
+            if len(state["compras"]) >= args.test_buys and not state.get("prueba_superada"):
+                state["prueba_superada"] = True
+                with open(state_file, "w", encoding="utf-8") as f:
+                    json.dump(state, f, indent=2)
+                notify.send(f"🎉 Prueba superada: {args.test_buys} compras sin errores ({mode}).\n"
+                            f"Invertido {state['invertido']:,.2f} USDT · BTC {state['btc']:.6f}\n📁 {folder}")
+                print(f"Prueba superada: {args.test_buys} compras sin errores.", flush=True)
+        except Exception as e:
+            error = f"{type(e).__name__}: {e}"
+            print(f"ERROR: {error}", flush=True)
+            notify.send(f"❌ El bot DCA falló ({mode})\n{error[:500]}\n📁 {folder}")
+            if not args.loop:
+                raise SystemExit(1)
         if not args.loop:
             break
         time.sleep(86_400 - time.time() % 86_400 + 10 * 60)  # 00:10 UTC del día siguiente
@@ -182,6 +194,7 @@ def main():
     p.add_argument("--loop", action="store_true", help="el bot revisa cada día")
     p.add_argument("--testnet", action="store_true", help="órdenes en la Testnet de Binance")
     p.add_argument("--state", default=STATE)
+    p.add_argument("--test-buys", type=int, default=3, help="compras para dar la prueba por superada")
     p.add_argument("--synthetic", action="store_true", help="precios inventados (sin internet)")
     args = p.parse_args()
 
