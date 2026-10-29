@@ -5,3 +5,8 @@ paper_*.json
 *.csv
 reporte*.html
 comparacion.txt
+datos/
+bot_config.json
+investigacion.txt
+investigacion.html
+paper_cartera.json

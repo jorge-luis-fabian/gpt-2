@@ -22,12 +22,16 @@ def _to_frame(rows):
     return df.set_index("timestamp").astype(float)
 
 
-def fetch_ohlcv(symbol=config.SYMBOL, timeframe=config.TIMEFRAME, days=180,
-                exchange_id=config.EXCHANGE):
-    """Descarga velas públicas del exchange (no necesita API keys)."""
+def make_exchange(exchange_id=config.EXCHANGE):
     import ccxt  # import aquí para que el modo sintético funcione sin ccxt instalado
 
-    exchange = getattr(ccxt, exchange_id)({"enableRateLimit": True})
+    return getattr(ccxt, exchange_id)({"enableRateLimit": True})
+
+
+def fetch_ohlcv(symbol=config.SYMBOL, timeframe=config.TIMEFRAME, days=180,
+                exchange_id=config.EXCHANGE, exchange=None):
+    """Descarga velas públicas del exchange (no necesita API keys)."""
+    exchange = exchange or make_exchange(exchange_id)
     step = timeframe_to_ms(timeframe)
     since = exchange.milliseconds() - days * 86_400_000
     rows = []

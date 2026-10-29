@@ -85,6 +85,36 @@ en **todos** los periodos queda a menos de 10 puntos de comprar y mantener, o re
 al menos un tercio sin perder más de la mitad del retorno. El criterio está fijado de antemano: si
 ninguna pasa, no se ajustan los números hasta que alguna pase.
 
+## 5. Bot de cartera: varias monedas a la vez
+
+La investigación descarga la historia diaria de unas 30 monedas de Binance desde 2017 (incluye varias
+que se hundieron, para no engañarse mirando solo a las ganadoras), prueba 14 estrategias de cartera y
+elige una con los datos **hasta 2022**. Después la juzga con **2023 en adelante**, años que no se
+usaron para elegirla.
+
+```bash
+python -m trading_bot.research      # unos minutos la primera vez; guarda los precios en datos/
+python -m trading_bot.bot           # aplica el bot elegido con dinero ficticio (una revisión)
+python -m trading_bot.bot --loop    # lo mismo, cada día después del cierre (00:10 UTC)
+```
+
+La investigación imprime los resultados, los guarda en `investigacion.txt`, crea `investigacion.html`
+con los gráficos y deja el bot elegido en `bot_config.json`.
+
+Estrategias de cartera (`portfolio.py`), con costos de 0,15 % por operación (comisión + deslizamiento):
+
+| Estrategia | Idea |
+|---|---|
+| Tendencia N días | Cada moneda se compra si su precio está sobre su media de N días (50, 100, 200), opcionalmente solo si BTC está sobre su media de 200 |
+| Rotación top K | Cada semana compra las K monedas que más subieron en 30, 60 o 90 días, solo si BTC está en tendencia alcista |
+| Donchian | Cada moneda entra al romper su máximo y sale al perder su mínimo |
+
+Solo se operan monedas con al menos 200 días de historia y 5 millones de USDT de volumen diario.
+
+**Criterio, fijado antes de ver resultados:** el bot sirve si en el periodo de prueba tiene un Sharpe
+igual o mejor que comprar y mantener BTC, una peor caída al menos un tercio menor y un retorno anual
+positivo. Si no lo cumple, no se usa con dinero real.
+
 ## Errores típicos por los que fallan los bots
 
 1. **Mirar el futuro**: decidir con el cierre de una vela y comprar a ese mismo precio. Aquí la
@@ -104,5 +134,10 @@ ninguna pasa, no se ajustan los números hasta que alguna pase.
 | `strategy.py` | Las estrategias: calculan la señal de compra/venta |
 | `backtest.py` | Simula una estrategia sobre el pasado y muestra métricas |
 | `compare.py` | Compara todas las estrategias en varios periodos |
+| `universe.py` | Lista de monedas y descarga de su historia diaria |
+| `portfolio.py` | Estrategias y motor del bot de cartera |
+| `research.py` | Investigación completa: elige monedas y estrategia |
+| `research_report.py` | Página con los gráficos de la investigación |
+| `bot.py` | Bot de cartera en paper trading |
 | `report.py` | Genera la página con gráficos del backtest |
 | `paper_trade.py` | Simula la estrategia en vivo con dinero ficticio |
